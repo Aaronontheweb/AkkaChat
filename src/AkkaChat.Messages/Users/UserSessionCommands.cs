@@ -6,6 +6,8 @@
 // -----------------------------------------------------------------------
 
 using System.Collections.Immutable;
+using Akka.Actor;
+using AkkaChat.Messages.ChatRooms;
 using AkkaChat.Models;
 using static AkkaChat.Messages.Users.UserSessionCommands;
 using static AkkaChat.Messages.Users.UserSessionEvents;
@@ -29,8 +31,8 @@ public static class UserSessionCommands
 
 public static class UserStateExtensions
 {
-    public static (CommandResultType resultType, IUserSessionEvent[] events) Process(this UserSessionState state,
-        IUserSessionCommand command)
+    public static async ValueTask<(CommandResultType resultType, IUserSessionEvent[] events)> ProcessAsync(this UserSessionState state,
+        IUserSessionCommand command, IActorRef chatRoomActor, CancellationToken ct = default)
     {
         if (state.IsEmpty)
         {
@@ -43,15 +45,63 @@ public static class UserStateExtensions
         switch (command)
         {
             case JoinChatRoom join:
-                return state.ActiveChatRooms.Contains(join.ChatRoomId)
-                    ? (CommandResultType.NoOp, Array.Empty<IUserSessionEvent>())
-                    : (CommandResultType.Success,
-                        new IUserSessionEvent[] { new ChatRoomJoined(join.UserId, join.ChatRoomId) });
+            {
+                if(state.ActiveChatRooms.Contains(join.ChatRoomId))
+                       return (CommandResultType.NoOp, Array.Empty<IUserSessionEvent>());
+
+                try
+                {
+                    var joinResult = await chatRoomActor.Ask<CommandResult>(
+                        new ChatRoomCommands.JoinChatRoom(join.ChatRoomId, join.UserId), ct);
+
+                    switch (joinResult.Type)
+                    {
+                        case CommandResultType.Success:
+                            return (joinResult.Type,
+                                new IUserSessionEvent[] { new ChatRoomJoined(join.UserId, join.ChatRoomId) });
+                        case CommandResultType.Failure:
+                            return (joinResult.Type, Array.Empty<IUserSessionEvent>());
+                        case CommandResultType.NoOp:
+                            return (joinResult.Type, Array.Empty<IUserSessionEvent>());
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    return (CommandResultType.Failure, Array.Empty<IUserSessionEvent>());
+                }
+            }
+
             case LeaveChatRoom leave:
-                return state.ActiveChatRooms.Contains(leave.ChatRoomId) ?
-                    (CommandResultType.Success,
-                        new IUserSessionEvent[] { new ChatRoomLeft(leave.UserId, leave.ChatRoomId) }) :
-                    (CommandResultType.NoOp, Array.Empty<IUserSessionEvent>());
+            {
+                if(!state.ActiveChatRooms.Contains(leave.ChatRoomId))
+                    return (CommandResultType.NoOp, Array.Empty<IUserSessionEvent>());
+                
+                try
+                {
+                    var leaveResult = await chatRoomActor.Ask<CommandResult>(
+                        new ChatRoomCommands.LeaveChatRoom(leave.ChatRoomId, leave.UserId), ct);
+
+                    switch (leaveResult.Type)
+                    {
+                        case CommandResultType.Success:
+                            return (leaveResult.Type,
+                                new IUserSessionEvent[] { new ChatRoomLeft(leave.UserId, leave.ChatRoomId) });
+                        case CommandResultType.Failure:
+                            return (leaveResult.Type, Array.Empty<IUserSessionEvent>());
+                        case CommandResultType.NoOp:
+                            return (leaveResult.Type, Array.Empty<IUserSessionEvent>());
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    return (CommandResultType.Failure, Array.Empty<IUserSessionEvent>());
+                }
+            }
+               
             case TerminateSession terminate:
                 return (CommandResultType.Success,
                     new IUserSessionEvent[] { new SessionTerminated(terminate.UserId) });

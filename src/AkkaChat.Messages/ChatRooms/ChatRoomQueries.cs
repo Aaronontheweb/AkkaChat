@@ -5,6 +5,7 @@
 //  </copyright>
 // -----------------------------------------------------------------------
 
+using Akka.Actor;
 using AkkaChat.Models;
 
 namespace AkkaChat.Messages.ChatRooms;
@@ -19,4 +20,8 @@ public interface IChatRoomQuery : IWithChatRoomId
 public static class ChatRoomQueries
 {
     public record GetRecentMessages(string ChatRoomId, string UserId, DateTimeOffset? Until = null, int Count = 30) : IChatRoomQuery, IWithUserId;
+    
+    public record SubscribeToMessages(string ChatRoomId, IActorRef Subscriber) : IChatRoomQuery;
+    
+    public record UnsubscribeFromMessages(string ChatRoomId, IActorRef Subscriber) : IChatRoomQuery;
 }

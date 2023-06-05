@@ -1,8 +1,5 @@
-using Akka.Actor;
 using Akka.Hosting;
-using AkkaChat.Web.Actors;
-using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
+using AkkaChat.Web.Config;
 using AkkaChat.Web.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,18 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddAkka("AkkaChat", (configurationBuilder, provider) =>
 {
     configurationBuilder
-        .WithActors((system, registry, _) =>
-        {
-            IActorRef roomManager = system.ActorOf(Props.Create(() => new RoomManagerActor()), "rooms");
-            registry.Register<RoomManagerActor>(roomManager);
-        })
-        .WithActors((system, registry, resolver) =>
-        {
-            // populate constructor arguments for actor using the IServiceProvider (DI)
-            Props userSessionManagerProps = resolver.Props<UserSessionManager>();
-            IActorRef userSessionManager = system.ActorOf(userSessionManagerProps, "user-session-manager");
-            registry.Register<UserSessionManager>(userSessionManager);
-        });
+        .AddAkkaChatActors();
 });
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();

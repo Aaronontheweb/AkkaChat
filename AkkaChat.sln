@@ -6,6 +6,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AkkaChat.Models", "src\Akka
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AkkaChat.Messages", "src\AkkaChat.Messages\AkkaChat.Messages.csproj", "{DE016CC5-88AF-4733-A5D5-75A5B5D6AE5A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AkkaChat.Web.Tests", "src\AkkaChat.Web.Tests\AkkaChat.Web.Tests.csproj", "{5F3400B6-25EB-4FCD-8C3C-320C9FE0E3B9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +26,9 @@ Global
 		{DE016CC5-88AF-4733-A5D5-75A5B5D6AE5A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DE016CC5-88AF-4733-A5D5-75A5B5D6AE5A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DE016CC5-88AF-4733-A5D5-75A5B5D6AE5A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5F3400B6-25EB-4FCD-8C3C-320C9FE0E3B9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5F3400B6-25EB-4FCD-8C3C-320C9FE0E3B9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5F3400B6-25EB-4FCD-8C3C-320C9FE0E3B9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5F3400B6-25EB-4FCD-8C3C-320C9FE0E3B9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

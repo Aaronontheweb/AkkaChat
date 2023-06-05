@@ -24,8 +24,13 @@ public static class ChatRoomEvents
     public record ChatRoomJoined(string ChatRoomId, string UserId) : IChatRoomEvent;
     
     public record ChatRoomLeft(string ChatRoomId, string UserId) : IChatRoomEvent;
-    
-    public record ChatRoomMessagePosted(string ChatRoomId, string UserId, ChatRoomMessage Message) : IChatRoomEvent;
+
+    public record ChatRoomMessagePosted(ChatRoomMessage Message) : IChatRoomEvent
+    {
+        public string ChatRoomId => Message.ChatRoomId;
+
+        public string UserId => Message.UserId;
+    }
 }
 
 
@@ -51,7 +56,7 @@ public static class ChatRoomStateExtensions{
             case PostMessage postMessage:
                 // TODO: add more robust message validation here
                 return state.ActiveUsers.Contains(postMessage.UserId)
-                    ? (CommandResultType.Success, new IChatRoomEvent[] {new ChatRoomMessagePosted(state.ChatRoomId, postMessage.UserId, postMessage.Message)})
+                    ? (CommandResultType.Success, new IChatRoomEvent[] {new ChatRoomMessagePosted(postMessage.Message)})
                     : (CommandResultType.Failure, Array.Empty<IChatRoomEvent>()); // can't process - user is not in the chatroom
             case CreateChatRoom _:
                 return (CommandResultType.NoOp, Array.Empty<IChatRoomEvent>()); // duplicate - chatroom already exists

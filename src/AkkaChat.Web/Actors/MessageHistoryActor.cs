@@ -5,6 +5,7 @@
 //  </copyright>
 // -----------------------------------------------------------------------
 
+using System.Collections.Immutable;
 using Akka.Event;
 using Akka.Actor;
 using Akka.Persistence;
@@ -17,6 +18,7 @@ namespace AkkaChat.Web.Actors;
 public sealed class MessageHistoryActor : ReceivePersistentActor
 {
     public ChatRoomState State { get; private set; } = ChatRoomState.Empty;
+    private readonly HashSet<IActorRef> _subscribers = new();
     private readonly ILoggingAdapter _log = Context.GetLogger();
     public override string PersistenceId { get; }
 
@@ -72,7 +74,30 @@ public sealed class MessageHistoryActor : ReceivePersistentActor
                     Sender.Tell(CommandResult.Success());
                     sentReply = true;
                 }
+
+                if (evt is not ChatRoomEvents.ChatRoomMessagePosted messagePosted) return;
+                
+                // publish chatroom messages to all subscribers
+                foreach (var subscriber in _subscribers)
+                    subscriber.Tell(messagePosted);
             });
+        });
+
+        Command<ChatRoomQueries.GetRecentMessages>(get =>
+        {
+            Sender.Tell(State.RecentMessages.Take(Math.Min(State.RecentMessages.Count, get.Count)).ToImmutableSortedSet());
+        });
+        
+        Command<ChatRoomQueries.SubscribeToMessages>(sub =>
+        {
+            _subscribers.Add(Sender);
+            Context.WatchWith(Sender, new ChatRoomQueries.UnsubscribeFromMessages(sub.ChatRoomId, Sender));
+        });
+        
+        Command<ChatRoomQueries.UnsubscribeFromMessages>(unsub =>
+        {
+            _subscribers.Remove(Sender);
+            Context.Unwatch(Sender);
         });
     }
 }

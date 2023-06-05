@@ -10,4 +10,8 @@
       <ProjectReference Include="..\AkkaChat.Models\AkkaChat.Models.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Include="Akka" Version="1.5.7" />
+    </ItemGroup>
+
 </Project>

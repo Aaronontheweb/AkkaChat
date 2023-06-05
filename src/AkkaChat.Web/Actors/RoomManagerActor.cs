@@ -25,10 +25,12 @@ public sealed class RoomManagerActor : ReceiveActor
             // CREATE IF NOT EXISTS pattern
             IActorRef chatRoomActor = Context.Child(cid.ChatRoomId).GetOrElse(() =>
             {
-                return Context.ActorOf(Props.Create(() => new MessageHistoryActor(cid.ChatRoomId)), cid.ChatRoomId);
+                return Context.ActorOf(Props.Create(() => new MessageHistoryActor(cid.ChatRoomId)), 
+                    name: cid.ChatRoomId);
             });
             
-            chatRoomActor.Forward(cid);
+            //chatRoomActor.Forward(cid);
+            chatRoomActor.Tell(cid, Sender);
         });
     }
 

@@ -6,7 +6,6 @@
 // -----------------------------------------------------------------------
 
 using Akka.Actor;
-using Akka.DependencyInjection;
 using Akka.Event;
 using Akka.Hosting;
 using AkkaChat.Messages.ChatRooms;
@@ -15,47 +14,82 @@ using AkkaChat.Models;
 
 namespace AkkaChat.Web.Actors;
 
-public sealed class UserSessionManager : ReceiveActor
-{
-    private readonly ILoggingAdapter _log = Context.GetLogger();
-    private readonly IRequiredActor<RoomManagerActor> _serviceProvider;
-
-    public UserSessionManager(IServiceProvider serviceProvider)
-    {
-        _serviceProvider = serviceProvider.GetRequiredService<IRequiredActor<RoomManagerActor>>();
-
-        Receive<IWithUserId>(cmd =>
-        {
-            IActorRef userSessionActor = Context.Child(cmd.UserId).GetOrElse(() =>
-            {
-                var resolver = DependencyResolver.For(Context.System);
-                var props = resolver.Props<UserSessionActor>(cmd.UserId);
-                return Context.ActorOf(props, cmd.UserId);
-            });
-            userSessionActor.Forward(cmd);
-        });
-    }
-    
-    protected override void PreStart()
-    {
-        _log.Info("UserSessionManager started with reference to RoomManagerActor {0}", _serviceProvider.ActorRef);
-    }
-}
-
-public sealed class UserSessionActor : ReceiveActor
+public sealed class UserSessionActor : ReceiveActor, IWithStash, IWithTimers
 {
     private readonly ILoggingAdapter _log = Context.GetLogger();
     public UserSessionState State { get; private set; } = UserSessionState.Empty;
     private readonly IActorRef _chatRoomActors;
 
+    private sealed class CreateTimeout
+    {
+        public static readonly CreateTimeout Instance = new();
+        private CreateTimeout(){}
+    }
+
     public UserSessionActor(string userId, IRequiredActor<RoomManagerActor> chatRoomActors)
     {
         _chatRoomActors = chatRoomActors.ActorRef;
         State = State with { UserId = userId };
+        
+        WaitingToBeCreated();
+        Timers!.StartSingleTimer("create-timeout", CreateTimeout.Instance, TimeSpan.FromSeconds(5));
+    }
 
-        Receive<IUserSessionCommand>(cmd =>
+    private void WaitingToBeCreated()
+    {
+        ReceiveAsync<UserSessionCommands.CreateSession>(async create =>
         {
-            var (resultType, events) = State.Process(cmd);
+            var (resultType, events) = await State.ProcessAsync(create, _chatRoomActors, CancellationToken.None);
+            
+            switch (resultType)
+            {
+                case CommandResultType.Failure:
+                    Sender.Tell(CommandResult.Failure($"Failed to process command {create}"));
+                    break;
+                case CommandResultType.NoOp:
+                    Sender.Tell(CommandResult.NoOp());
+                    break;
+                case CommandResultType.Success:
+                    Sender.Tell(CommandResult.Success());
+                    break;
+            }
+            
+            foreach (var @event in events)
+            {
+                _log.Info("UserSessionActor: Processing {0}", @event);
+                State = State.Apply(@event);
+            }
+            
+            if(State.IsEmpty)
+                throw new InvalidOperationException("UserSessionState is empty - should have been created");
+            
+            Timers.Cancel("create-timeout"); // turn off our create timeout
+            Become(Active);
+            Stash.UnstashAll();
+            Context.SetReceiveTimeout(TimeSpan.FromMinutes(30));
+        });
+
+        Receive<CreateTimeout>(_ =>
+        {
+            _log.Error("UserSessionActor: CreateTimeout after 5s - stopping actor");
+            Stash.UnstashAll(); // need to NACK all messages that have been buffered
+            Self.Tell(PoisonPill.Instance); // only shutdown after all stashed messages have been processed
+            Become(TimedOut);
+        });
+        
+        ReceiveAny(_ =>
+        {
+            // buffer any messages we can't process right now
+            Stash.Stash();
+        });
+    }
+
+    private void Active()
+    {
+        ReceiveAsync<IUserSessionCommand>(async cmd =>
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+            var (resultType, events) = await State.ProcessAsync(cmd, _chatRoomActors, cts.Token);
 
             switch (resultType)
             {
@@ -71,20 +105,28 @@ public sealed class UserSessionActor : ReceiveActor
             {
                 _log.Info("UserSessionActor: Processing {0}", @event);
                 
-                switch (@event)
-                {
-                    case UserSessionEvents.ChatRoomJoined joined:
-                        _chatRoomActors.Tell(new ChatRoomCommands.JoinChatRoom(joined.ChatRoomId, userId));
-                        break;
-                    case UserSessionEvents.ChatRoomLeft joinedLeft:
-                        _chatRoomActors.Tell(new ChatRoomCommands.LeaveChatRoom(joinedLeft.ChatRoomId, userId));
-                        break;
-                }
-                
                 State = State.Apply(@event);
             }
 
             Sender.Tell(CommandResult.Success());
         });
+
+        Receive<UserSessionQueries.GetSessionState>(state =>
+        {
+            Sender.Tell(State);
+        });
+
+        Receive<ReceiveTimeout>(_ => Context.Stop(Self));
     }
+
+    private void TimedOut()
+    {
+        Receive<IUserSessionCommand>(cmd =>
+        {
+            Sender.Tell(CommandResult.Failure($"Failed to process command {cmd} - Session failed to create after 5s."));
+        });
+    }
+
+    public IStash Stash { get; set; } = null!;
+    public ITimerScheduler Timers { get; set; }
 }
