@@ -10,4 +10,8 @@
     <ProjectReference Include="..\AkkaChat.Messages\AkkaChat.Messages.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Akka.Cluster.Hosting" Version="1.5.7" />
+  </ItemGroup>
+
 </Project>

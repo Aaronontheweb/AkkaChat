@@ -10,7 +10,9 @@ public interface IWithChatRoomId
     string ChatRoomId { get; }
 }
 
-public record ChatRoomState(string ChatRoomId, string Description, ImmutableHashSet<IWithUserId> ActiveUsers, int TotalMessages = 0) : IWithChatRoomId
+public record ChatRoomState(string ChatRoomId, string Name, string OwnerId, ImmutableHashSet<string> ActiveUsers, ImmutableSortedSet<ChatRoomMessage> RecentMessages, int TotalMessages = 0) : IWithChatRoomId
 {
-    public static ChatRoomState Empty => new(string.Empty, string.Empty, ImmutableHashSet<IWithUserId>.Empty);
+    public static ChatRoomState Empty => new(string.Empty, string.Empty, string.Empty, ImmutableHashSet<string>.Empty, ImmutableSortedSet<ChatRoomMessage>.Empty);
+
+    public bool IsEmpty => string.IsNullOrEmpty(OwnerId);
 }

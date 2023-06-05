@@ -5,6 +5,8 @@
 //  </copyright>
 // -----------------------------------------------------------------------
 
+using System.Collections.Immutable;
+
 namespace AkkaChat.Models;
 
 public interface IWithUserId
@@ -12,7 +14,9 @@ public interface IWithUserId
     string UserId { get; }
 }
 
-public record UserSessionState(string UserId, string DisplayName) : IWithUserId
+public record UserSessionState(string UserId, string DisplayName, ImmutableHashSet<string> ActiveChatRooms) : IWithUserId
 {
-    public static readonly UserSessionState Empty = new(string.Empty, string.Empty);
+    public static readonly UserSessionState Empty = new(string.Empty, string.Empty, ImmutableHashSet<string>.Empty);
+    
+    public bool IsEmpty => DisplayName == string.Empty;
 }
