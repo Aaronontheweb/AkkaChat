@@ -1,8 +1,14 @@
+// -----------------------------------------------------------------------
+//  <copyright file="WeatherForecastService.cs" company="Akka.NET Project">
+//      Copyright (C) 2015-2023 .NET Petabridge, LLC
+//  </copyright>
+// -----------------------------------------------------------------------
+
 namespace AkkaChat.Web.Data;
 
 public class WeatherForecastService
 {
-    private static readonly string[] Summaries = new[]
+    private static readonly string[] Summaries =
     {
         "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
     };

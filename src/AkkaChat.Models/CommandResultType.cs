@@ -1,7 +1,6 @@
 // -----------------------------------------------------------------------
 //  <copyright file="CommandResultType.cs" company="Akka.NET Project">
-//      Copyright (C) 2009-2023 Lightbend Inc. <http://www.lightbend.com>
-//      Copyright (C) 2013-2023 .NET Foundation <https://github.com/akkadotnet/akka.net>
+//      Copyright (C) 2015-2023 .NET Petabridge, LLC
 //  </copyright>
 // -----------------------------------------------------------------------
 
@@ -16,7 +15,18 @@ public enum CommandResultType
 
 public record CommandResult(CommandResultType Type, string Message)
 {
-    public static CommandResult Success(string? message = null) => new(CommandResultType.Success, message ?? "Ok");
-    public static CommandResult Failure(string message) => new(CommandResultType.Failure, message);
-    public static CommandResult NoOp(string? message = null) => new(CommandResultType.NoOp, message ?? "NoOp");
+    public static CommandResult Success(string? message = null)
+    {
+        return new CommandResult(CommandResultType.Success, message ?? "Ok");
+    }
+
+    public static CommandResult Failure(string message)
+    {
+        return new CommandResult(CommandResultType.Failure, message);
+    }
+
+    public static CommandResult NoOp(string? message = null)
+    {
+        return new CommandResult(CommandResultType.NoOp, message ?? "NoOp");
+    }
 }

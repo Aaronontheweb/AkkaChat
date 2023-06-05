@@ -1,7 +1,6 @@
 ﻿// -----------------------------------------------------------------------
 //  <copyright file="UserSessionCommands.cs" company="Akka.NET Project">
-//      Copyright (C) 2009-2023 Lightbend Inc. <http://www.lightbend.com>
-//      Copyright (C) 2013-2023 .NET Foundation <https://github.com/akkadotnet/akka.net>
+//      Copyright (C) 2015-2023 .NET Petabridge, LLC
 //  </copyright>
 // -----------------------------------------------------------------------
 
@@ -31,7 +30,8 @@ public static class UserSessionCommands
 
 public static class UserStateExtensions
 {
-    public static async ValueTask<(CommandResultType resultType, IUserSessionEvent[] events)> ProcessAsync(this UserSessionState state,
+    public static async ValueTask<(CommandResultType resultType, IUserSessionEvent[] events)> ProcessAsync(
+        this UserSessionState state,
         IUserSessionCommand command, IActorRef chatRoomActor, CancellationToken ct = default)
     {
         if (state.IsEmpty)
@@ -46,8 +46,8 @@ public static class UserStateExtensions
         {
             case JoinChatRoom join:
             {
-                if(state.ActiveChatRooms.Contains(join.ChatRoomId))
-                       return (CommandResultType.NoOp, Array.Empty<IUserSessionEvent>());
+                if (state.ActiveChatRooms.Contains(join.ChatRoomId))
+                    return (CommandResultType.NoOp, Array.Empty<IUserSessionEvent>());
 
                 try
                 {
@@ -75,9 +75,9 @@ public static class UserStateExtensions
 
             case LeaveChatRoom leave:
             {
-                if(!state.ActiveChatRooms.Contains(leave.ChatRoomId))
+                if (!state.ActiveChatRooms.Contains(leave.ChatRoomId))
                     return (CommandResultType.NoOp, Array.Empty<IUserSessionEvent>());
-                
+
                 try
                 {
                     var leaveResult = await chatRoomActor.Ask<CommandResult>(
@@ -101,7 +101,7 @@ public static class UserStateExtensions
                     return (CommandResultType.Failure, Array.Empty<IUserSessionEvent>());
                 }
             }
-               
+
             case TerminateSession terminate:
                 return (CommandResultType.Success,
                     new IUserSessionEvent[] { new SessionTerminated(terminate.UserId) });

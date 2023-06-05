@@ -1,7 +1,6 @@
 ﻿// -----------------------------------------------------------------------
 //  <copyright file="UserSessionManager.cs" company="Akka.NET Project">
-//      Copyright (C) 2009-2023 Lightbend Inc. <http://www.lightbend.com>
-//      Copyright (C) 2013-2023 .NET Foundation <https://github.com/akkadotnet/akka.net>
+//      Copyright (C) 2015-2023 .NET Petabridge, LLC
 //  </copyright>
 // -----------------------------------------------------------------------
 
@@ -24,7 +23,7 @@ public sealed class UserSessionManager : ReceiveActor
 
         Receive<IWithUserId>(cmd =>
         {
-            IActorRef userSessionActor = Context.Child(cmd.UserId).GetOrElse(() =>
+            var userSessionActor = Context.Child(cmd.UserId).GetOrElse(() =>
             {
                 var resolver = DependencyResolver.For(Context.System);
                 var props = resolver.Props<UserSessionActor>(cmd.UserId);

@@ -1,7 +1,6 @@
 // -----------------------------------------------------------------------
 //  <copyright file="RoomManagerActor.cs" company="Akka.NET Project">
-//      Copyright (C) 2009-2023 Lightbend Inc. <http://www.lightbend.com>
-//      Copyright (C) 2013-2023 .NET Foundation <https://github.com/akkadotnet/akka.net>
+//      Copyright (C) 2015-2023 .NET Petabridge, LLC
 //  </copyright>
 // -----------------------------------------------------------------------
 
@@ -12,23 +11,23 @@ using AkkaChat.Models;
 namespace AkkaChat.Web.Actors;
 
 /// <summary>
-/// Responsible for keeping track of all chat rooms that might exist inside the application
+///     Responsible for keeping track of all chat rooms that might exist inside the application
 /// </summary>
 public sealed class RoomManagerActor : ReceiveActor
 {
     private readonly ILoggingAdapter _log = Context.GetLogger();
-    
+
     public RoomManagerActor()
     {
         Receive<IWithChatRoomId>(cid =>
         {
             // CREATE IF NOT EXISTS pattern
-            IActorRef chatRoomActor = Context.Child(cid.ChatRoomId).GetOrElse(() =>
+            var chatRoomActor = Context.Child(cid.ChatRoomId).GetOrElse(() =>
             {
-                return Context.ActorOf(Props.Create(() => new MessageHistoryActor(cid.ChatRoomId)), 
-                    name: cid.ChatRoomId);
+                return Context.ActorOf(Props.Create(() => new MessageHistoryActor(cid.ChatRoomId)),
+                    cid.ChatRoomId);
             });
-            
+
             //chatRoomActor.Forward(cid);
             chatRoomActor.Tell(cid, Sender);
         });

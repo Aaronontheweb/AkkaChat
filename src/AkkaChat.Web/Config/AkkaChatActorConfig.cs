@@ -1,7 +1,6 @@
 ﻿// -----------------------------------------------------------------------
 //  <copyright file="AkkaChatActorConfig.cs" company="Akka.NET Project">
-//      Copyright (C) 2009-2023 Lightbend Inc. <http://www.lightbend.com>
-//      Copyright (C) 2013-2023 .NET Foundation <https://github.com/akkadotnet/akka.net>
+//      Copyright (C) 2015-2023 .NET Petabridge, LLC
 //  </copyright>
 // -----------------------------------------------------------------------
 
@@ -17,14 +16,14 @@ public static class AkkaChatActorConfig
     {
         return builder.WithActors((system, registry, _) =>
             {
-                IActorRef roomManager = system.ActorOf(Props.Create(() => new RoomManagerActor()), "rooms");
+                var roomManager = system.ActorOf(Props.Create(() => new RoomManagerActor()), "rooms");
                 registry.Register<RoomManagerActor>(roomManager);
             })
             .WithActors((system, registry, resolver) =>
             {
                 // populate constructor arguments for actor using the IServiceProvider (DI)
-                Props userSessionManagerProps = resolver.Props<UserSessionManager>();
-                IActorRef userSessionManager = system.ActorOf(userSessionManagerProps, "user-session-manager");
+                var userSessionManagerProps = resolver.Props<UserSessionManager>();
+                var userSessionManager = system.ActorOf(userSessionManagerProps, "user-session-manager");
                 registry.Register<UserSessionManager>(userSessionManager);
             });
     }
